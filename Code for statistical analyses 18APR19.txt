@@ -1,0 +1,70 @@
+###Scripts for assessing statistical significance of IF and cell cycle analyses for artB paper (ram524@cornell.edu) created 18APR19
+
+###Load programs
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(multcompView)
+
+###IF MODEL FOR FIGURE 1A
+if1=read.csv("if1_26JUN18.csv", sep=",", strip.white = TRUE, header=TRUE,na.strings="")
+m_if1=lmer((logit)~Sample+(1|Experiment), data=if1)
+anova(m_if1)
+plot(predict(m_if1),resid(m_if1))
+hist(resid(m_if1))
+qqnorm(resid(m_if1))
+qqline(resid(m_if1))
+m_ifemmeans <- emmeans(m_if1, ~Sample)
+pairs(m_ifemmeans)
+model.cld <- cld(m_ifemmeans, Letters = LETTERS)
+model.cld
+
+
+###FIGURE 1B: LMER MODEL FOR PROPORTION OF CELLS IN G1/S/G2-M
+cc1=read.csv("FC.csv", sep=",", strip.white = TRUE, header=TRUE)
+###G2
+m_g2=lm(G2_logit~Strain + Rep.
+         ,data=cc1)
+summary(m_g2)
+anova(m_g2)
+g2.em <- emmeans(m_g2, ~ Strain)
+g2.em.cld <- cld(g2.em, Letters = LETTERS)
+g2.em.cld
+pairs(g2.em)
+#Checking model assumptions
+plot(resid(m_g2)~predict(m_g2))
+hist(resid(m_g2))
+qqnorm(resid(m_g2))
+qqline(resid(m_g2))
+
+###G1
+m_g1=lm(G1_logit~Strain + Rep.
+        ,data=cc1)
+summary(m_g1)
+anova(m_g1)
+g1.em <- emmeans(m_g1, ~ Strain)
+g1.em.cld <- cld(g1.em, Letters = LETTERS)
+g1.em.cld
+pairs(g1.em)
+#Checking model assumptions
+plot(resid(m_g1)~predict(m_g1))
+hist(resid(m_g1))
+qqnorm(resid(m_g1))
+qqline(resid(m_g1))
+
+###S
+m_s=lm((1/sqrt(S))~Strain +Rep.
+        ,data=cc1)
+summary(m_s)
+anova(m_s)
+s.em <- emmeans(m_s, ~ Strain)
+s.em.cld <- cld(s.em, Letters = LETTERS)
+s.em.cld
+pairs(s.em)
+
+#Checking model assumptions
+plot(resid(m_s)~predict(m_s))
+hist(resid(m_s))
+qqnorm(resid(m_s))
+qqline(resid(m_s))
+
