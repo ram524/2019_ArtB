@@ -1,0 +1,101 @@
+---
+title: "Salmonella Two hybrid"
+author:"Sophia Harrand"
+date:"7172018"
+output: html_document
+---
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(emmeans)
+library(multcomp)
+library(tidyr)
+library(lme4)
+library(knitr)
+library(ggpubr)
+
+#Read Data
+data=read.csv("0.02mM_08162018_blnk.csv")
+data$ID=as.factor(data$ID)
+data$Trial=as.factor(data$Trial)
+ID2 <- relevel(data$ID, ref = "Neg") 
+levels(ID2) 
+model1=lm(log10(Absorbance) ~ID2+Trial, data=data) 
+summary(model1) 
+unadjusted_model=data.frame(summary(model1)$coefficients[-c(1,20,21),])
+unadjusted_model$ID=row.names(unadjusted_model)
+unadjusted_model$ID=substring(unadjusted_model$ID, 4, nchar(unadjusted_model$ID))
+unadjusted_model$pvalue_un=unadjusted_model$Pr...t..
+unadjusted_model2=unadjusted_model %>%
+  select(ID, pvalue_un)
+
+multcomps<-glht(model1,linfct=mcp(ID2="Dunnett"))
+summary(multcomps)$test -> comp.summary
+
+comp.summary2=cbind.data.frame(comp.summary$coefficients, comp.summary$pvalues)
+comp.summary2$ID=row.names(comp.summary2)
+comp.summary2$ID=substring(comp.summary2$ID, 1, nchar(comp.summary2$ID)-6)
+
+plot.data=data %>%
+  group_by(ID) %>%
+  summarize(mean=mean(log10(Absorbance)), SE=sd(log10(Absorbance))/sqrt(3))
+
+plot.data2=merge(plot.data, comp.summary2, by=("ID"), all=TRUE)
+plot.data2$pvalue=plot.data2$`comp.summary$pvalues`
+plot.data2$pvalue[plot.data2$ID=="Neg"]=1
+plot.data_dublesig=merge(plot.data2, unadjusted_model2, by=("ID"), all=TRUE)
+plot.data_dublesig$signif=as.numeric(plot.data_dublesig$pvalue<0.05)
+plot.data_dublesig$signif_un=as.numeric(plot.data_dublesig$pvalue_un<0.05)
+
+
+plot.data3=plot.data_dublesig %>%
+  select(ID, mean, SE, signif, signif_un)
+
+plot.data3$signif2=NA
+plot.data3$signif2[plot.data3$signif==1]="*"
+plot.data3$ID=relevel(plot.data3$ID, ref="Neg") 
+#data.plot3$ID=factor(List order that you want)
+
+plot.data3$signif2_un=NA
+plot.data3$signif2_un[plot.data3$signif_un==1]="*"
+
+
+
+
+ggplot(data=plot.data3, aes(x=ID, y=mean))+
+  ggtitle("")+
+  labs(y="Mean log10 OD [600]", x="",caption="Asterisk denotes significant difference  (p<0.05) from negative control")+
+  geom_point() +
+  geom_errorbar(aes(ymin=mean-SE,
+                    ymax=mean+SE),
+                width=.2,
+                position=position_dodge(.9)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  geom_text(aes(label=signif2,y=mean+SE+0.2, color="indianred3")) +
+  scale_color_discrete(guide=F) +  # Turn off ugly legend 
+ geom_text(aes(label=signif2_un,y=mean+SE+0.05, color="lightcyan3")) 
+
+
+
+
+
+
+
+
+#Read Data_repeat
+data=read.csv("0.02mM_repeat.csv")
+data$ID=as.factor(data$ID)
+data$Trial=as.factor(data$Trial)
+ID2 <- relevel(data$ID, ref = "Neg") 
+levels(ID2) 
+model1=lm(log10(Absorbance) ~ID2+Trial, data=data) 
+summary(model1) 
+multcomps<-glht(model1,linfct=mcp(ID2="Dunnett"))
+summary(multcomps)
+
+
+

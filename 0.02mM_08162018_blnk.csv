@@ -1,0 +1,58 @@
+ID,Trial,Absorbance,Timepoint
+Pos,1,0.871,24 h
+Neg,1,0.037,24 h
+ct-artB pKT25 + pltB pUT18,1,0.052,24 h
+artB pUT18 + ct-pltB pKT25,1,0.041,24 h
+ct-artB pUT18 + pltB pKT25,1,0.041,24 h
+ct-artB pUT18C + ct-pltB pKNT25,1,0.036,24 h
+ct-artB pUT18C + pltB pKNT25,1,0.049,24 h
+ct-artB pKNT25 + pltB pUT18C,1,0.039,24 h
+artB pUT18C + ct-pltB pKNT25,1,0.035,24 h
+artB pUT18C + pltB pKNT25,1,0.035,24 h
+artB pKNT25 + ct-pltB pUT18C,1,0.03,24 h
+artB pKNT25 + pltB pUT18C,1,0.037,24 h
+ct-pltB pUT18 + cT-pltB pKT25,1,0.611,24 h
+pltB pUT18 + pltB pKT25,1,0.747,24 h
+artB pUT18 + artB pKT25,1,0.096,24 h
+ct-artB pUT18C + artB pKNT25,1,0.043,24 h
+ct-pltB pUT18 + ct-artB pKT25,1,0.046,24 h
+pltB pKT25 + artB pUT18,1,0.044,24 h
+pltB pKT25 + ct-artB pUT18,1,0.034,24 h
+Pos,2,0.845,24 h
+Neg,2,0.042,24 h
+ct-artB pKT25 + pltB pUT18,2,0.065,24 h
+artB pUT18 + ct-pltB pKT25,2,0.042,24 h
+ct-artB pUT18 + pltB pKT25,2,0.039,24 h
+ct-artB pUT18C + ct-pltB pKNT25,2,0.033,24 h
+ct-artB pUT18C + pltB pKNT25,2,0.04,24 h
+ct-artB pKNT25 + pltB pUT18C,2,0.044,24 h
+artB pUT18C + ct-pltB pKNT25,2,0.039,24 h
+artB pUT18C + pltB pKNT25,2,0.037,24 h
+artB pKNT25 + ct-pltB pUT18C,2,0.042,24 h
+artB pKNT25 + pltB pUT18C,2,0.04,24 h
+ct-pltB pUT18 + cT-pltB pKT25,2,0.587,24 h
+pltB pUT18 + pltB pKT25,2,0.818,24 h
+artB pUT18 + artB pKT25,2,0.077,24 h
+ct-artB pUT18C + artB pKNT25,2,0.046,24 h
+ct-pltB pUT18 + ct-artB pKT25,2,0.044,24 h
+pltB pKT25 + artB pUT18,2,0.075,24 h
+pltB pKT25 + ct-artB pUT18,2,0.037,24 h
+Pos,3,0.865,24 h
+Neg,3,0.041,24 h
+ct-artB pKT25 + pltB pUT18,3,0.041,24 h
+artB pUT18 + ct-pltB pKT25,3,0.04,24 h
+ct-artB pUT18 + pltB pKT25,3,0.041,24 h
+ct-artB pUT18C + ct-pltB pKNT25,3,0.041,24 h
+ct-artB pUT18C + pltB pKNT25,3,0.042,24 h
+ct-artB pKNT25 + pltB pUT18C,3,0.041,24 h
+artB pUT18C + ct-pltB pKNT25,3,0.043,24 h
+artB pUT18C + pltB pKNT25,3,0.042,24 h
+artB pKNT25 + ct-pltB pUT18C,3,0.041,24 h
+artB pKNT25 + pltB pUT18C,3,0.042,24 h
+ct-pltB pUT18 + cT-pltB pKT25,3,0.52,24 h
+pltB pUT18 + pltB pKT25,3,0.696,24 h
+artB pUT18 + artB pKT25,3,0.077,24 h
+ct-artB pUT18C + artB pKNT25,3,0.049,24 h
+ct-pltB pUT18 + ct-artB pKT25,3,0.041,24 h
+pltB pKT25 + artB pUT18,3,0.044,24 h
+pltB pKT25 + ct-artB pUT18,3,0.042,24 h
