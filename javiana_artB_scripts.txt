@@ -1,0 +1,240 @@
+### This script includes the pipeline used for downloading S. Javiana genomes from NCBI, genome assembly with SPAdes, quality checks, ksnp3 core SNP calling, RaXML phylogeny, and BLAST searches
+#!usr/bin/perl
+#This is a script to go over several files with SRA IDs and then download SRA files usign fastq-dump
+
+#Get all files with SRA Ids from directory
+my @txt = glob "srr_cantaloupe*.txt";
+
+#read each file at a time
+foreach $filename (@txt){
+
+#open file using file handler
+open INPUT, "<", $filename;
+
+#check each line at a time                         
+while(defined($line=<INPUT>)){
+
+#chomp($line);
+
+#run fastq-dump
+
+open FASTQ, "|fastq-dump --gzip --split-files $line";
+close FASTQ;
+}
+close INPUT;
+}
+
+#!/bin/bash
+#Matt Stasiewicz 7-1-14
+#Use Trimmomatic to trim the raw reads
+#sh trimmomatic2.sh <inpath>
+
+#$1=/media/drive2/NYSDOH_ENV_SRA1/MJS
+
+#O: *.trimmed[S/P].fastq.gz files in $gp
+#deletes .fastq.gz
+
+#loops through the output from fastq, the _[1/2].fastq.gz and does read trimming
+#Raw read trimming with Trimmomatic, ref below.  MJS comments each step of the loop with documentation from:
+#http://www.usadellab.org/cms/?page=trimmomatic
+#It appears Henk used the default parameters settings for all steps, adjusting file paths and names as appropriate
+
+cd $1
+echo | pwd
+for f in *1.fastq.gz
+	do 
+		if [ -f "${f%_1.fastq.gz}_1.trimmedP.fastq.gz" ]
+		then
+		echo 'skip'${f}
+		continue
+		fi
+	echo 'trim' ${f}
+	java -jar /programs/trimmomatic/trimmomatic-0.36.jar PE -threads 30 -phred33 -trimlog log $f ${f%_1.fastq.gz}_2.fastq.gz ${f%_1.fastq.gz}_1.trimmedP.fastq.gz ${f%_1.fastq.gz}_1.trimmedS.fastq.gz ${f%_1.fastq.gz}_2.trimmedP.fastq.gz ${f%_1.fastq.gz}_2.trimmedS.fastq.gz ILLUMINACLIP:/programs/trimmomatic/adapters/NexteraPE-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:26;
+done;
+
+#rm *_1.fastq.gz
+#rm *_2.fastq.gz
+
+#!/bin/bash
+#Matt Stasiewicz 3-7-14
+#Use fastq to perform intial qc and save results
+#nohup sh <inpath> <outpath> <suff>
+
+#$1=/media/drive2/NYSDOH_ENV_SRA1/MJS
+#$2=/media/drive2/NYSDOH_ENV_SRA1/MJS/fastqc_res
+#$3=[1-2].fastq.gz
+
+#O: fastqc html in $gp/fastqc_res
+
+cd $1
+for file in *$3
+    do 
+	cd $2	
+	if [ -d "${file%.fastq.gz}_fastqc" ]
+	then
+	echo 'skip'${file}
+	continue
+	fi
+	cd $1
+    echo 'fastqc 1'${file}
+    fastqc $file -o $2;
+done
+
+#!/bin/bash
+
+#Matt Stasiewicz 7-1-14 modified by LC Carroll 12-18-14 by S Harrand 10-12-16 by jk2739 10-26-16
+#Use SPades to assemble the genome
+#nohup sh spades.sh <inpath>
+
+cd $1
+#run spades
+for f in *_1.trimmedP.fastq.gz
+#insert an exit if matches in dir
+do
+if [ -d "${f%_1.trimmedP.fastq.gz}" ]
+then
+echo 'skip '${f}
+continue
+fi
+echo 'assemble' ${f%_1.trimmedP.fastq.gz}
+python /programs/spades/bin/spades.py -k 33,55,77,99,127 --careful -1 $f -2 ${f%_1.trimmedP.fastq.gz}_2.trimmedP.fastq.gz -o ${f%_1.trimmedP.fastq.gz} -t 35 -m 200;
+done
+#check the created log file for any issues
+
+#collect contigs files and rename them
+mkdir contigs  
+for f in *_1.trimmedP.fastq.gz 
+do
+	cd ${f%_1.trimmedP.fastq.gz}
+	cat contigs.fasta > ${f%_1.trimmedP.fastq.gz}_contigs.fasta
+	cp ${f%_1.trimmedP.fastq.gz}_contigs.fasta ../contigs
+	cd ..;
+done
+
+mkdir scaffolds  
+for f in *_1.trimmedP.fastq.gz  
+do
+	cd ${f%_1.trimmedP.fastq.gz}
+	cat scaffolds.fasta > ${f%_1.trimmedP.fastq.gz}_scaffolds.fasta
+	cp ${f%_1.trimmedP.fastq.gz}_scaffolds.fasta ../scaffolds
+	cd ..;
+done
+
+#!/bin/python
+#Remove contigs shorter than 200 bp
+#jk2739
+#092716
+#Usage: run from a directory with contigs file and a script
+#Usage: python remove_short_contigs.py <infile.fasta> <outfile.fasta>
+
+import sys
+from Bio import SeqIO
+
+infile = sys.argv[1]
+parsed_infile = SeqIO.parse(open(infile,"rU"), "fasta")
+remove_short = (contig for contig in parsed_infile if len(contig.seq) > 500)
+
+outfile= sys.argv[2]
+output = open(outfile, "w")
+SeqIO.write(remove_short, output, "fasta")
+output.close()
+
+#!/bin/bash
+#QUAST - assembly quality control
+#jk2739
+#112415
+
+mkdir quast_results
+
+for f in *.fasta
+do
+python /programs/quast-4.0/quast.py -o ./quast_results/quast_${f%_contigs.fasta} --min-contig 1 $f
+done
+
+#collect report txt files
+
+mkdir quast_reports
+for f in *.fasta
+do cd quast_results/quast_${f%_contigs.fasta}
+cat report.txt > ${f%_contigs.fasta}_report.txt
+cp ${f%_contigs.fasta}_report.txt ../../quast_reports
+cd ../..
+done
+
+#!/bin/bash
+# average_coverage.sh <path to directory with contigs and reads>
+# written November 2, 2015 by LC Carroll
+# Shout out to Matt S. for giving me the bam_coverage.sh script
+
+cd $1
+# BBMap to determine coverage
+for f in *_contigs_long.fasta
+do
+echo "Indexing $f with BBMap..."
+/programs/bbmap-37.50/bbmap.sh ref=$f
+echo "Mapping reads to $f with BBMap..." #the suffix if not dealing with trimmedP files
+/programs/bbmap-37.50/bbmap.sh in=${f%_contigs_long.fasta}_1.trimmedP.fastq.gz in2=${f%_contigs_long.fasta}_2.trimmedP.fastq.gz out=${f%_contigs_long.fasta}.sam
+echo "SAM file created.  BBMap finished."
+mv ref/ ${f%_contigs_long.fasta}_ref/
+
+# Now let's use samtools to covert, sort, and index
+echo "Converting SAM to BAM with samtools..."
+samtools view -Sb ${f%_contigs_long.fasta}.sam > ${f%_contigs_long.fasta}.bam
+echo "BAM file created."
+echo "Removing sam file..."
+rm -r *.sam
+echo "Sorting BAM file with samtools..."
+samtools sort ${f%_contigs_long.fasta}.bam -o ${f%_contigs_long.fasta}_sorted.bam
+echo "Finished sorting."
+echo "Indexing sorted BAM file..."
+samtools  index ${f%_contigs_long.fasta}_sorted.bam
+echo "Index complete."
+echo "Using samtools depth to obtain average genome coverage..."
+X=$(samtools depth ${f%_contigs_long.fasta}_sorted.bam | awk '{sum+=$3} END { print sum/NR}');
+echo "${f%_contigs_long.fasta}_sorted.bam";
+echo "$X";
+echo "${f%_contigs_long.fasta}_sorted.bam $X">> average_coverage.txt;
+done
+
+# Run SISTR to determine serotype of genomes
+# Export env. variable to $PATH
+export PYTHONPATH=/programs/sistr_cmd/lib/python2.7/site-packages
+
+# Run SISTR
+/workdir/sistr_cmd/bin/sistr --qc -vv -f csv -o *.csv --no-cgmlst *_contigs_long.fasta
+
+# Commands for kSNP3
+# Export env. variable to $PATH
+export PATH=/programs/kSNP3:$PATH
+
+# Create input file with location of fasta files. "A" stands for Automatic mode.
+MakeKSNP3infile directory_with_files output_file_name A
+
+# Create Fasta file for Kchooser
+MakeFasta input_file_name output_file_name.fasta
+
+# Run Kchooser
+Kchooser input_file_name.fasta
+
+#Run kSNP3
+kSNP3 -in file_with_paths_to_genomes -outdir output_directory -k 19 -core
+
+# Commands for RAxML
+# Export env. variable to $PATH
+export PATH=/programs/RAxML-8.2.12:$PATH
+
+# Run RAxML using kSNP3 core_SNPs_matrix.fasta output
+raxmlHPC -f a -x 165 -m ASC_GTRGAMMAX --asc-corr=lewis --no-bfgs -p 596 -N 1000 
+-s core_SNPs_matrix.fasta
+
+# Run BLAST to determine presence or absence of artA, artB, cdtB, and pltB
+# Make BLAST database of artA, artB, cdtB, and pltB sequences
+makeblastdb -in artAB_cdtB_pltB.fsa -dbtype 'nucl'
+
+#BLAST sequences against S. Javiana genomes
+for genome in *.fasta
+do
+blastn -db artAB_cdtB_pltB.fsa -query $genome -evalue 1e-20 -gapopen 3 -gapextend 1
+-outfmt 6 'qseqid sseqid pident length mismatch gapopene qstart qend sstart send evalue
+bitscore qseq sseq' -out $genome.out
+done
